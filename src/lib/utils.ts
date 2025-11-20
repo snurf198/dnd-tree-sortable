@@ -82,9 +82,9 @@ const handleDragEnd = (
   );
   const overContainerIndex = findContainerIndexWithId(over.id as string, items);
   if (
-    !activeContainerIndex ||
-    !overContainerIndex ||
-    activeContainerIndex === overContainerIndex
+    activeContainerIndex === null ||
+    overContainerIndex === null ||
+    activeContainerIndex !== overContainerIndex
   ) {
     return;
   }

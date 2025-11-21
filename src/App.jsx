@@ -25,7 +25,7 @@ function App() {
               padding: "10px",
               border: "1px solid #ccc",
               borderRadius: "5px",
-              width: "220px",
+              width: "300px",
             }}
           >
             {container.id}

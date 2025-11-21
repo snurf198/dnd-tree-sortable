@@ -3,23 +3,32 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import React from "react";
+import React, { useState } from "react";
 import SortableItemWrapper from "./sortable-item-wrapper";
-import { Container, Item } from "./type";
+import { Container, FlattendContainer, FlattenedItem } from "./type";
 
 const DroppableContainer = ({
   container,
   renderItem,
   renderContainer,
+  overId,
+  activeId,
+  projected,
+  indentationWidth = 20,
 }: {
-  container: Container;
-  renderItem: (item: Item) => React.ReactNode;
+  container: FlattendContainer;
+  overId: string | null;
+  activeId: string | null;
+  renderItem: (item: FlattenedItem) => React.ReactNode;
   renderContainer: (
-    container: Container,
+    container: FlattendContainer,
     children: React.ReactNode
   ) => React.ReactNode;
+  projected: { depth: number } | null;
+  indentationWidth?: number;
 }) => {
   const droppable = useDroppable({ id: container.id });
+
   return (
     <div ref={droppable.setNodeRef}>
       <SortableContext
@@ -37,7 +46,16 @@ const DroppableContainer = ({
             }}
           >
             {container.children.map((item) => (
-              <SortableItemWrapper key={item.id} id={item.id}>
+              <SortableItemWrapper
+                key={item.id}
+                id={item.id}
+                depth={
+                  item.id === activeId && projected
+                    ? projected.depth
+                    : item.depth
+                }
+                indentationWidth={indentationWidth}
+              >
                 {renderItem(item)}
               </SortableItemWrapper>
             ))}

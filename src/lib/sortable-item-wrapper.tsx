@@ -5,11 +5,15 @@ import { CSS } from "@dnd-kit/utilities";
 const SortableItemWrapper = ({
   id,
   children,
+  depth,
   ghost = false,
+  indentationWidth = 20,
 }: {
   id: string;
   children?: React.ReactNode;
   ghost?: boolean;
+  depth: number;
+  indentationWidth?: number;
 }) => {
   const {
     setNodeRef,
@@ -23,12 +27,15 @@ const SortableItemWrapper = ({
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
+    marginLeft: `${depth * indentationWidth}px`,
   };
 
-  const isDraggingStyle = {
-    height: "4px",
-    borderTop: "4px solid #000000",
-  };
+  const isDraggingStyle = isDragging
+    ? {
+        height: "4px",
+        backgroundColor: "#000000",
+      }
+    : {};
 
   const ghostStyle = ghost
     ? {

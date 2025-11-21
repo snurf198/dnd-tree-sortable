@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   closestCorners,
   DndContext,
+  DragEndEvent,
+  DragMoveEvent,
+  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   MouseSensor,
@@ -10,9 +13,15 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import DroppableContainer from "./droppable-container";
-import { Container, Item } from "./type";
-import { handleDragEnd, handleDragOver } from "./utils";
+import { Container, FlattendContainer, FlattenedItem } from "./type";
 import SortableItemWrapper from "./sortable-item-wrapper";
+import { arrayMove } from "@dnd-kit/sortable";
+import {
+  findContainerIndexWithId,
+  flattenTree,
+  getProjection,
+  removeChildrenOf,
+} from "./utils";
 
 const ITEMS: Container[] = [
   {
@@ -21,10 +30,13 @@ const ITEMS: Container[] = [
       {
         id: "3",
         name: "Task 1",
-      },
-      {
-        id: "4",
-        name: "Task 2",
+        children: [
+          {
+            id: "4",
+            name: "Task 2",
+            children: [],
+          },
+        ],
       },
     ],
   },
@@ -34,6 +46,7 @@ const ITEMS: Container[] = [
       {
         id: "5",
         name: "Task 3",
+        children: [],
       },
     ],
   },
@@ -42,10 +55,12 @@ const ITEMS: Container[] = [
 const DndTreeSortable = ({
   renderContainer,
   renderItem,
+  indentationWidth = 20,
 }: {
-  renderItem: (item: Item) => React.ReactNode;
+  indentationWidth?: number;
+  renderItem: (item: FlattenedItem) => React.ReactNode;
   renderContainer: (
-    container: Container,
+    container: FlattendContainer,
     children: React.ReactNode
   ) => React.ReactNode;
 }) => {
@@ -53,19 +68,163 @@ const DndTreeSortable = ({
   const touchSensor = useSensor(TouchSensor);
   const mouseSensor = useSensor(MouseSensor);
   const sensors = useSensors(touchSensor, mouseSensor);
-
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [offsetLeft, setOffsetLeft] = useState<number>(0);
+
+  const flattenedContainers: FlattendContainer[] = useMemo(() => {
+    return items.map((container) => ({
+      ...container,
+      children: removeChildrenOf(
+        flattenTree(container.children),
+        activeId ? [activeId] : []
+      ),
+    }));
+  }, [activeId, items]);
+
+  const projected =
+    activeId && overId
+      ? getProjection(
+          flattenedContainers,
+          activeId,
+          overId,
+          offsetLeft,
+          indentationWidth
+        )
+      : null;
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    setOverId(event.active.id as string);
   };
 
-  const activeItem = ITEMS.flatMap((item) => {
-    return item.children.map((child) => ({
-      ...child,
-      containerId: item.id,
-    }));
-  }).find((item) => item.id === activeId);
+  const childFilteredItems = useMemo(
+    () =>
+      flattenedContainers.map((item) => ({
+        ...item,
+        children: removeChildrenOf(item.children, activeId ? [activeId] : []),
+      })),
+    [activeId]
+  );
+
+  const handleDragOver = (
+    event: DragOverEvent,
+    items: Container[],
+    setItems: (items: Container[]) => void
+  ) => {
+    setOverId(event.over?.id as string);
+    const { active, over } = event;
+    if (!over) {
+      return;
+    }
+    const activeContainerIndex = findContainerIndexWithId(
+      active.id as string,
+      items
+    );
+    const overContainerIndex = findContainerIndexWithId(
+      over.id as string,
+      items
+    );
+    if (activeContainerIndex === null || overContainerIndex === null) {
+      return;
+    }
+    if (activeContainerIndex === overContainerIndex) {
+      return;
+    }
+
+    const activeContainer = items[activeContainerIndex];
+    const overContainer = items[overContainerIndex];
+    const activeItem = activeContainer.children.find(
+      (item) => item.id === (active.id as string)
+    );
+    if (activeItem === undefined) {
+      return;
+    }
+
+    const newItems = [...items];
+    newItems[activeContainerIndex] = {
+      ...activeContainer,
+      children: removeChildrenOf(flattenTree(activeContainer.children), [
+        active.id as string,
+      ]).filter((item) => item.id !== active.id),
+    };
+    newItems[overContainerIndex] = {
+      ...overContainer,
+      children: [...overContainer.children, activeItem],
+    };
+
+    setItems(newItems);
+  };
+
+  const handleDragMove = (event: DragMoveEvent) => {
+    setOffsetLeft(event.delta.x);
+  };
+
+  const handleDragEnd = (
+    event: DragEndEvent,
+    items: Container[],
+    setItems: (
+      items: Container[] | ((prev: Container[]) => Container[])
+    ) => void
+  ) => {
+    setActiveId(null);
+    setOverId(null);
+    setOffsetLeft(0);
+
+    const { active, over } = event;
+    if (!active || !over) {
+      return;
+    }
+
+    const activeContainerIndex = findContainerIndexWithId(
+      active.id as string,
+      items
+    );
+    const overContainerIndex = findContainerIndexWithId(
+      over.id as string,
+      items
+    );
+    if (
+      activeContainerIndex === null ||
+      overContainerIndex === null ||
+      activeContainerIndex !== overContainerIndex
+    ) {
+      return;
+    }
+
+    const activeItemIndex = items[activeContainerIndex].children.findIndex(
+      (item) => item.id === active.id
+    );
+    const overItemIndex = items[overContainerIndex].children.findIndex(
+      (item) => item.id === over.id
+    );
+
+    if (projected === null && activeItemIndex !== overItemIndex) {
+      return;
+    }
+
+    if (projected) {
+      setItems((prev) => {
+        const newItems = [...prev];
+        const clonedItems = [...items[overContainerIndex].children];
+        const activeItems = prev[overContainerIndex].children[activeItemIndex];
+        clonedItems[activeItemIndex] = {
+          ...activeItems,
+          depth: projected.depth,
+        };
+        newItems[overContainerIndex] = {
+          ...items[overContainerIndex],
+          children: arrayMove(clonedItems, activeItemIndex, overItemIndex),
+        };
+
+        return newItems;
+      });
+    }
+  };
+
+  const activeItem = flattenedContainers
+    .flatMap((item) => item.children)
+    .find((item) => item.id === activeId);
 
   return (
     <DndContext
@@ -75,23 +234,32 @@ const DndTreeSortable = ({
         handleDragOver(event, items, setItems);
       }}
       onDragEnd={(event) => {
-        handleDragEnd(event, setActiveId, items, setItems);
+        handleDragEnd(event, items, setItems);
       }}
+      onDragMove={handleDragMove}
       collisionDetection={closestCorners}
     >
-      <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-        {items.map((item) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {childFilteredItems.map((item) => (
           <DroppableContainer
+            projected={projected}
             key={item.id}
             container={item}
             renderItem={renderItem}
+            overId={overId}
+            activeId={activeId}
             renderContainer={renderContainer}
+            indentationWidth={indentationWidth}
           />
         ))}
       </div>
       <DragOverlay>
         {activeId && activeItem ? (
-          <SortableItemWrapper id={activeId} ghost={true}>
+          <SortableItemWrapper
+            id={activeId}
+            ghost={true}
+            depth={activeItem.depth}
+          >
             {renderItem(activeItem)}
           </SortableItemWrapper>
         ) : null}

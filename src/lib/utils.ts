@@ -1,8 +1,7 @@
-import { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
-import { Container } from "./type";
+import { FlattendContainer, FlattenedItem, TreeItem } from "./type";
 import { arrayMove } from "@dnd-kit/sortable";
 
-const findContainerIndexWithId = (
+export const findContainerIndexWithId = (
   id: string,
   items: { id: string; children: { id: string; [key: string]: any }[] }[]
 ): number | null => {
@@ -20,97 +19,170 @@ const findContainerIndexWithId = (
   return index;
 };
 
-const handleDragOver = (
-  event: DragOverEvent,
-  items: Container[],
-  setItems: (items: Container[]) => void
-) => {
-  const { active, over } = event;
-  if (!over) {
-    return;
-  }
-  const activeContainerIndex = findContainerIndexWithId(
-    active.id as string,
-    items
-  );
-  const overContainerIndex = findContainerIndexWithId(over.id as string, items);
-  if (activeContainerIndex === null || overContainerIndex === null) {
-    return;
-  }
-  if (activeContainerIndex === overContainerIndex) {
-    return;
+const getDragDepth = (offset: number, indentationWidth: number): number => {
+  return Math.round(offset / indentationWidth);
+};
+
+const getMaxDepth = ({
+  previousItem,
+}: {
+  previousItem: FlattenedItem;
+}): number => {
+  if (previousItem) {
+    return previousItem.depth + 1;
   }
 
-  const activeContainer = items[activeContainerIndex];
+  return 0;
+};
+
+const getMinDepth = ({ nextItem }: { nextItem: FlattenedItem }): number => {
+  if (nextItem) {
+    return nextItem.depth;
+  }
+
+  return 0;
+};
+
+export const getProjection = (
+  items: FlattendContainer[],
+  activeId: string,
+  overId: string,
+  dragOffset: number,
+  indentationWidth: number
+): {
+  depth: number;
+  maxDepth: number;
+  minDepth: number;
+  parentId: string | null;
+  containerId: string | null;
+} => {
+  const overContainerIndex = findContainerIndexWithId(overId, items);
+  const activeContainerIndex = findContainerIndexWithId(activeId, items);
+  if (overContainerIndex === null || activeContainerIndex === null) {
+    return {
+      depth: 0,
+      maxDepth: 0,
+      minDepth: 0,
+      parentId: null,
+      containerId: null,
+    };
+  }
+
   const overContainer = items[overContainerIndex];
-  const activeItem = activeContainer.children.find(
-    (item) => item.id === (active.id as string)
+  const activeContainer = items[activeContainerIndex];
+
+  const overItemIndex = overContainer.children.findIndex(
+    (item) => item.id === overId
   );
-  if (activeItem === undefined) {
-    return;
+  const activeItemIndex = activeContainer.children.findIndex(
+    (item) => item.id === activeId
+  );
+
+  if (activeItemIndex === -1 || overItemIndex === -1) {
+    return {
+      depth: 0,
+      maxDepth: 0,
+      minDepth: 0,
+      parentId: null,
+      containerId: null,
+    };
   }
 
-  const newItems = [...items];
-  newItems[activeContainerIndex] = {
-    ...activeContainer,
-    children: activeContainer.children.filter(
-      (item) => item.id !== (active.id as string)
-    ),
-  };
-  newItems[overContainerIndex] = {
-    ...overContainer,
-    children: [...overContainer.children, activeItem],
-  };
-  setItems(newItems);
-};
+  const activeItem = activeContainer.children[activeItemIndex];
 
-const handleDragEnd = (
-  event: DragEndEvent,
-  setActiveId: (id: string | null) => void,
-  items: Container[],
-  setItems: (items: Container[] | ((prev: Container[]) => Container[])) => void
-) => {
-  setActiveId(null);
-  const { active, over } = event;
-  if (!active || !over) {
-    return;
-  }
-
-  const activeContainerIndex = findContainerIndexWithId(
-    active.id as string,
-    items
-  );
-  const overContainerIndex = findContainerIndexWithId(over.id as string, items);
-  if (
-    activeContainerIndex === null ||
-    overContainerIndex === null ||
-    activeContainerIndex !== overContainerIndex
-  ) {
-    return;
-  }
-
-  const activeItemIndex = items[activeContainerIndex].children.findIndex(
-    (item) => item.id === active.id
-  );
-  const overItemIndex = items[overContainerIndex].children.findIndex(
-    (item) => item.id === over.id
-  );
-
+  let newItems: FlattenedItem[] = [];
   if (activeItemIndex !== overItemIndex) {
-    setItems((prev) => {
-      const newItems = [...prev];
-      newItems[overContainerIndex] = {
-        ...items[overContainerIndex],
-        children: arrayMove(
-          prev[overContainerIndex].children,
-          activeItemIndex,
-          overItemIndex
-        ),
-      };
+    newItems = [...overContainer.children];
+    newItems = [
+      ...newItems.slice(0, overItemIndex),
+      activeItem,
+      ...newItems.slice(overItemIndex),
+    ];
+  } else {
+    newItems = arrayMove(
+      overContainer.children,
+      activeItemIndex,
+      overItemIndex
+    );
+  }
+  const previousItem = newItems[overItemIndex - 1];
+  const nextItem = newItems[overItemIndex + 1];
+  const dragDepth = getDragDepth(dragOffset, indentationWidth);
+  const projectedDepth = activeItem.depth + dragDepth;
+  const maxDepth = getMaxDepth({
+    previousItem,
+  });
+  const minDepth = getMinDepth({ nextItem });
+  let depth = projectedDepth;
 
-      return newItems;
-    });
+  if (projectedDepth >= maxDepth) {
+    depth = maxDepth;
+  } else if (projectedDepth < minDepth) {
+    depth = minDepth;
+  }
+
+  return {
+    depth,
+    maxDepth,
+    minDepth,
+    parentId: getParentId(),
+    containerId: overContainer.id,
+  };
+
+  function getParentId(): string | null {
+    if (depth === 0 || !previousItem) {
+      return null;
+    }
+
+    if (depth === previousItem.depth) {
+      return previousItem.parentId;
+    }
+
+    if (depth > previousItem.depth) {
+      return previousItem.id;
+    }
+
+    const newParent = newItems
+      .slice(0, overItemIndex)
+      .reverse()
+      .find((item) => item.depth === depth)?.parentId;
+
+    return newParent ?? null;
   }
 };
 
-export { handleDragEnd, handleDragOver };
+export const removeChildrenOf = (
+  items: FlattenedItem[],
+  ids: string[]
+): FlattenedItem[] => {
+  const excludeParentIds = [...ids];
+
+  return items.filter((item) => {
+    if (item.parentId && excludeParentIds.includes(item.parentId)) {
+      if (item.children.length) {
+        excludeParentIds.push(item.id);
+      }
+      return false;
+    }
+
+    return true;
+  });
+};
+
+function flatten(
+  items: TreeItem[],
+  parentId: string | null = null,
+  depth: number = 0
+): FlattenedItem[] {
+  return items.reduce<FlattenedItem[]>((acc, item, index) => {
+    return [
+      ...acc,
+      { ...item, parentId, depth, index },
+      ...flatten(item.children, item.id, depth + 1),
+    ];
+  }, []);
+}
+
+export function flattenTree(items: TreeItem[]): FlattenedItem[] {
+  return flatten(items);
+}

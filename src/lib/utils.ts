@@ -186,3 +186,27 @@ function flatten(
 export function flattenTree(items: TreeItem[]): FlattenedItem[] {
   return flatten(items);
 }
+
+export function findItem(
+  items: TreeItem[],
+  itemId: string
+): TreeItem | undefined {
+  return items.find(({ id }) => id === itemId);
+}
+
+export function buildTree(flattendItems: FlattenedItem[]): TreeItem[] {
+  const root: TreeItem = { id: "root", children: [] };
+  const nodes: Record<string, TreeItem> = { [root.id]: root };
+  const items = flattendItems.map((item) => ({ ...item, children: [] }));
+
+  for (const item of items) {
+    const { id, children } = item;
+    const parentId = item.parentId ?? root.id;
+    const parent = nodes[parentId] ?? findItem(items, parentId);
+
+    nodes[id] = { id, children };
+    parent.children.push(item);
+  }
+
+  return root.children;
+}

@@ -17,6 +17,7 @@ import { Container, FlattendContainer, FlattenedItem } from "./type";
 import SortableItemWrapper from "./sortable-item-wrapper";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
+  buildTree,
   findContainerIndexWithId,
   flattenTree,
   getProjection,
@@ -98,15 +99,6 @@ const DndTreeSortable = ({
     setOverId(event.active.id as string);
   };
 
-  const childFilteredItems = useMemo(
-    () =>
-      flattenedContainers.map((item) => ({
-        ...item,
-        children: removeChildrenOf(item.children, activeId ? [activeId] : []),
-      })),
-    [activeId]
-  );
-
   const handleDragOver = (
     event: DragOverEvent,
     items: Container[],
@@ -141,19 +133,20 @@ const DndTreeSortable = ({
       return;
     }
 
-    const newItems = [...items];
-    newItems[activeContainerIndex] = {
+    const clonedContainers = [...items];
+
+    clonedContainers[activeContainerIndex] = {
       ...activeContainer,
-      children: removeChildrenOf(flattenTree(activeContainer.children), [
-        active.id as string,
-      ]).filter((item) => item.id !== active.id),
+      children: activeContainer.children.filter(
+        (item) => item.id !== active.id
+      ),
     };
-    newItems[overContainerIndex] = {
+    clonedContainers[overContainerIndex] = {
       ...overContainer,
-      children: [...overContainer.children, activeItem],
+      children: [...clonedContainers[overContainerIndex].children, activeItem],
     };
 
-    setItems(newItems);
+    setItems(clonedContainers);
   };
 
   const handleDragMove = (event: DragMoveEvent) => {
@@ -240,7 +233,7 @@ const DndTreeSortable = ({
       collisionDetection={closestCorners}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {childFilteredItems.map((item) => (
+        {flattenedContainers.map((item) => (
           <DroppableContainer
             projected={projected}
             key={item.id}

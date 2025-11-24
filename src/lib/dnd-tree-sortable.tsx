@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   closestCorners,
   DndContext,
@@ -60,11 +60,14 @@ const DndTreeSortable = ({
   indentationWidth = 20,
 }: {
   indentationWidth?: number;
-  renderItem: (item: FlattenedItem) => React.ReactNode;
-  renderContainer: (
-    container: FlattendContainer,
-    children: React.ReactNode
-  ) => React.ReactNode;
+  renderItem: ({ item }: { item: FlattenedItem }) => React.ReactNode;
+  renderContainer: ({
+    container,
+    children,
+  }: {
+    container: FlattendContainer;
+    children: React.ReactNode;
+  }) => React.ReactNode;
 }) => {
   const [items, setItems] = useState<Container[]>(ITEMS);
   const touchSensor = useSensor(TouchSensor);
@@ -270,7 +273,7 @@ const DndTreeSortable = ({
             ghost={true}
             depth={activeItem.depth}
           >
-            {renderItem(activeItem)}
+            {renderItem({ item: activeItem })}
           </SortableItemWrapper>
         ) : null}
       </DragOverlay>

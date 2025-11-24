@@ -3,15 +3,14 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import React, { useState } from "react";
+import React from "react";
 import SortableItemWrapper from "./sortable-item-wrapper";
-import { Container, FlattendContainer, FlattenedItem } from "./type";
+import { FlattendContainer, FlattenedItem } from "./type";
 
 const DroppableContainer = ({
   container,
   renderItem,
   renderContainer,
-  overId,
   activeId,
   projected,
   indentationWidth = 20,
@@ -19,11 +18,14 @@ const DroppableContainer = ({
   container: FlattendContainer;
   overId: string | null;
   activeId: string | null;
-  renderItem: (item: FlattenedItem) => React.ReactNode;
-  renderContainer: (
-    container: FlattendContainer,
-    children: React.ReactNode
-  ) => React.ReactNode;
+  renderItem: ({ item }: { item: FlattenedItem }) => React.ReactNode;
+  renderContainer: ({
+    container,
+    children,
+  }: {
+    container: FlattendContainer;
+    children: React.ReactNode;
+  }) => React.ReactNode;
   projected: { depth: number } | null;
   indentationWidth?: number;
 }) => {
@@ -35,32 +37,34 @@ const DroppableContainer = ({
         items={container.children.map((item) => item.id)}
         strategy={verticalListSortingStrategy}
       >
-        {renderContainer(
+        {renderContainer({
           container,
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              height: "100%",
-            }}
-          >
-            {container.children.map((item) => (
-              <SortableItemWrapper
-                key={item.id}
-                id={item.id}
-                depth={
-                  item.id === activeId && projected
-                    ? projected.depth
-                    : item.depth
-                }
-                indentationWidth={indentationWidth}
-              >
-                {renderItem(item)}
-              </SortableItemWrapper>
-            ))}
-          </div>
-        )}
+          children: (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                height: "100%",
+              }}
+            >
+              {container.children.map((item) => (
+                <SortableItemWrapper
+                  key={item.id}
+                  id={item.id}
+                  depth={
+                    item.id === activeId && projected
+                      ? projected.depth
+                      : item.depth
+                  }
+                  indentationWidth={indentationWidth}
+                >
+                  {renderItem({ item })}
+                </SortableItemWrapper>
+              ))}
+            </div>
+          ),
+        })}
       </SortableContext>
     </div>
   );

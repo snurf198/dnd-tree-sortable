@@ -1,37 +1,14 @@
 import "./App.css";
+import { DefaultContainer } from "./lib/components/default-container";
+import { DefaultItemRender } from "./lib/components/default-item-render";
 import DndTreeSortable from "./lib/dnd-tree-sortable";
 
 function App() {
   return (
     <>
       <DndTreeSortable
-        renderItem={(item) => (
-          <div
-            style={{
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              width: "200px",
-              height: "26px",
-            }}
-          >
-            {item.name}
-          </div>
-        )}
-        renderContainer={(container, children) => (
-          <div
-            key={container.id}
-            style={{
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              width: "300px",
-            }}
-          >
-            {container.id}
-            {children}
-          </div>
-        )}
+        renderItem={DefaultItemRender}
+        renderContainer={DefaultContainer}
       />
     </>
   );

@@ -23,10 +23,10 @@
   "type": "module",
   "main": "./dist/dnd-tree-sortable.js",
   "module": "./dist/dnd-tree-sortable.js",
-  "types": "./dist/dnd-tree-sortable.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/dnd-tree-sortable.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/dnd-tree-sortable.js"
     }
   },

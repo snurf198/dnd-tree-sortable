@@ -9,7 +9,8 @@ export default defineConfig({
     react(),
     dts({
       include: ["src/lib/**/*"],
-      insertTypesEntry: true,
+      outDir: "dist",
+      entryRoot: "src/lib",
     }),
   ],
   build: {

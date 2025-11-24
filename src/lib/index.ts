@@ -1,4 +1,5 @@
 export { default as DndTreeSortable } from "./dnd-tree-sortable";
+export { default as default } from "./dnd-tree-sortable";
 export { DefaultContainer } from "./components/default-container";
 export { DefaultItemRender } from "./components/default-item-render";
 export type {

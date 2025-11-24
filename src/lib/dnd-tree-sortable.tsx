@@ -43,6 +43,16 @@ const ITEMS: Container[] = [
             name: "Task 2",
             children: [],
           },
+          {
+            id: "6",
+            name: "Task 3",
+            children: [],
+          },
+          {
+            id: "7",
+            name: "Task 4",
+            children: [],
+          },
         ],
       },
     ],
@@ -53,7 +63,18 @@ const ITEMS: Container[] = [
       {
         id: "5",
         name: "Task 3",
-        children: [],
+        children: [
+          {
+            id: "8",
+            name: "Task 4",
+            children: [],
+          },
+          {
+            id: "9",
+            name: "Task 5",
+            children: [],
+          },
+        ],
       },
     ],
   },

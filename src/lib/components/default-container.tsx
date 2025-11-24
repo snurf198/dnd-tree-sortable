@@ -16,6 +16,7 @@ export const DefaultContainer = ({
         border: "1px solid #ccc",
         borderRadius: "5px",
         width: "300px",
+        minHeight: "300px",
       }}
     >
       {container.id}

@@ -1,4 +1,3 @@
-import React from "react";
 import { FlattendContainer } from "../type";
 
 export const DefaultContainer = ({

@@ -30,62 +30,14 @@ import {
   removeChildrenOf,
 } from "./utils";
 
-const ITEMS: Container[] = [
-  {
-    id: "1",
-    children: [
-      {
-        id: "3",
-        name: "Task 1",
-        children: [
-          {
-            id: "4",
-            name: "Task 2",
-            children: [],
-          },
-          {
-            id: "6",
-            name: "Task 3",
-            children: [],
-          },
-          {
-            id: "7",
-            name: "Task 4",
-            children: [],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2",
-    children: [
-      {
-        id: "5",
-        name: "Task 3",
-        children: [
-          {
-            id: "8",
-            name: "Task 4",
-            children: [],
-          },
-          {
-            id: "9",
-            name: "Task 5",
-            children: [],
-          },
-        ],
-      },
-    ],
-  },
-];
-
 const DndTreeSortable = ({
+  items: initialItems,
   renderContainer,
   renderItem,
   indentationWidth = 20,
   onPositionChange,
 }: {
+  items: Container[];
   indentationWidth?: number;
   renderItem: ({ item }: { item: FlattenedItem }) => React.ReactNode;
   renderContainer: ({
@@ -97,7 +49,7 @@ const DndTreeSortable = ({
   }) => React.ReactNode;
   onPositionChange: (event: PositionChangeEvent) => void;
 }) => {
-  const [items, setItems] = useState<Container[]>(ITEMS);
+  const [items, setItems] = useState<Container[]>(initialItems);
   const touchSensor = useSensor(TouchSensor);
   const mouseSensor = useSensor(MouseSensor);
   const sensors = useSensors(touchSensor, mouseSensor);

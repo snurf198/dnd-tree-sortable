@@ -1,4 +1,3 @@
-import React from "react";
 import { FlattenedItem } from "../type";
 
 export const DefaultItemRender = ({ item }: { item: FlattenedItem }) => {

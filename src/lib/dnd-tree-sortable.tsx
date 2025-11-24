@@ -36,6 +36,9 @@ const DndTreeSortable = ({
   renderItem,
   indentationWidth = 20,
   onPositionChange,
+  containerGap = 10,
+  itemGap = 10,
+  linkIcon = null,
 }: {
   items: Container[];
   indentationWidth?: number;
@@ -48,6 +51,9 @@ const DndTreeSortable = ({
     children: React.ReactNode;
   }) => React.ReactNode;
   onPositionChange: (event: PositionChangeEvent) => void;
+  containerGap?: number;
+  itemGap?: number;
+  linkIcon?: React.ReactNode | null;
 }) => {
   const [items, setItems] = useState<Container[]>(initialItems);
   const touchSensor = useSensor(TouchSensor);
@@ -265,7 +271,9 @@ const DndTreeSortable = ({
       onDragMove={handleDragMove}
       collisionDetection={closestCorners}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: containerGap }}
+      >
         {flattenedContainers.map((item) => (
           <DroppableContainer
             projected={projected}
@@ -276,6 +284,8 @@ const DndTreeSortable = ({
             activeId={activeId}
             renderContainer={renderContainer}
             indentationWidth={indentationWidth}
+            itemGap={itemGap}
+            linkIcon={linkIcon}
           />
         ))}
       </div>

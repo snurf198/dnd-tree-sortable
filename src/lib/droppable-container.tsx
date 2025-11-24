@@ -14,6 +14,8 @@ const DroppableContainer = ({
   activeId,
   projected,
   indentationWidth = 20,
+  itemGap = 10,
+  linkIcon = null,
 }: {
   container: FlattendContainer;
   overId: string | null;
@@ -28,6 +30,8 @@ const DroppableContainer = ({
   }) => React.ReactNode;
   projected: { depth: number } | null;
   indentationWidth?: number;
+  itemGap?: number;
+  linkIcon?: React.ReactNode | null;
 }) => {
   const droppable = useDroppable({ id: container.id });
 
@@ -44,7 +48,7 @@ const DroppableContainer = ({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px",
+                gap: itemGap,
                 height: "100%",
               }}
             >
@@ -58,6 +62,7 @@ const DroppableContainer = ({
                       : item.depth
                   }
                   indentationWidth={indentationWidth}
+                  linkIcon={linkIcon}
                 >
                   {renderItem({ item })}
                 </SortableItemWrapper>

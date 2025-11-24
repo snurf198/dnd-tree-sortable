@@ -8,12 +8,14 @@ const SortableItemWrapper = ({
   depth,
   ghost = false,
   indentationWidth = 20,
+  linkIcon = null,
 }: {
   id: string;
   children?: React.ReactNode;
   ghost?: boolean;
   depth: number;
   indentationWidth?: number;
+  linkIcon?: React.ReactNode | null;
 }) => {
   const {
     setNodeRef,
@@ -27,7 +29,13 @@ const SortableItemWrapper = ({
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
-    marginLeft: `${depth * indentationWidth}px`,
+    marginLeft: `${
+      Math.max(depth - (linkIcon != null && !isDragging ? 1 : 0), 0) *
+      indentationWidth
+    }px`,
+    display: "flex",
+    flexDirection: "row" as const,
+    alignItems: "center",
   };
 
   const isDraggingStyle = isDragging
@@ -39,7 +47,7 @@ const SortableItemWrapper = ({
 
   const ghostStyle = ghost
     ? {
-        opacity: 0.3,
+        opacity: 0.5,
       }
     : {};
 
@@ -70,7 +78,8 @@ const SortableItemWrapper = ({
       {...attributes}
       {...listeners}
     >
-      {children}
+      {depth > 0 && <div>{linkIcon}</div>}
+      <div>{children}</div>
     </div>
   );
 };

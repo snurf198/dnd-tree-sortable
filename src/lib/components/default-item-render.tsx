@@ -1,9 +1,7 @@
 import React from "react";
 import { FlattenedItem } from "../type";
 
-export const DefaultItemRender = (props: { item: FlattenedItem }) => {
-  const { item } = props;
-
+export const DefaultItemRender = ({ item }: { item: FlattenedItem }) => {
   return (
     <div
       style={{

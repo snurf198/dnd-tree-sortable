@@ -21,3 +21,10 @@ export interface FlattenedItem extends TreeItem {
   depth: number;
   index: number;
 }
+
+export interface PositionChangeEvent {
+  targetId: string;
+  parentId: string | null;
+  nextId: string | null;
+  containerId: string;
+}

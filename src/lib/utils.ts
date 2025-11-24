@@ -105,7 +105,7 @@ export const getProjection = (
   const activeItem = activeContainer.children[activeItemIndex];
 
   let newItems: FlattenedItem[] = [];
-  if (activeItemIndex !== overItemIndex) {
+  if (overContainerIndex !== activeContainerIndex) {
     newItems = [...overContainer.children];
     newItems = [
       ...newItems.slice(0, overItemIndex),

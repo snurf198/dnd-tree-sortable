@@ -13,7 +13,12 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import DroppableContainer from "./droppable-container";
-import { Container, FlattendContainer, FlattenedItem } from "./type";
+import {
+  Container,
+  FlattendContainer,
+  FlattenedItem,
+  PositionChangeEvent,
+} from "./type";
 import SortableItemWrapper from "./sortable-item-wrapper";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
@@ -58,6 +63,7 @@ const DndTreeSortable = ({
   renderContainer,
   renderItem,
   indentationWidth = 20,
+  onPositionChange,
 }: {
   indentationWidth?: number;
   renderItem: ({ item }: { item: FlattenedItem }) => React.ReactNode;
@@ -68,6 +74,7 @@ const DndTreeSortable = ({
     container: FlattendContainer;
     children: React.ReactNode;
   }) => React.ReactNode;
+  onPositionChange: (event: PositionChangeEvent) => void;
 }) => {
   const [items, setItems] = useState<Container[]>(ITEMS);
   const touchSensor = useSensor(TouchSensor);
@@ -148,9 +155,22 @@ const DndTreeSortable = ({
         )
       ),
     };
+
+    const overIndex = flattendOverTree.findIndex((item) => item.id === over.id);
+    let newFlattendOverTree: FlattenedItem[] = [];
+    if (overIndex === -1) {
+      newFlattendOverTree = [...flattendOverTree, ...flattenTree([activeItem])];
+    } else {
+      newFlattendOverTree = [
+        ...flattendOverTree.slice(0, overIndex),
+        ...flattenTree([activeItem]),
+        ...flattendOverTree.slice(overIndex),
+      ];
+    }
+
     clonedContainers[overContainerIndex] = {
       ...clonedContainers[overContainerIndex],
-      children: buildTree([...flattendOverTree, ...flattenTree([activeItem])]),
+      children: buildTree(newFlattendOverTree),
     };
 
     setItems(clonedContainers);
@@ -220,6 +240,30 @@ const DndTreeSortable = ({
           activeItemIndex,
           overItemIndex
         );
+
+        const newActiveItemIndex = sortedClonedItems.findIndex(
+          (item) => item.id === active.id
+        );
+        let nextItemIndex = newActiveItemIndex + 1;
+        let nextId: string | null = null;
+        if (nextItemIndex >= sortedClonedItems.length) {
+          nextId = null;
+        } else {
+          const nextItem = sortedClonedItems[nextItemIndex];
+          const activeItem = sortedClonedItems[newActiveItemIndex];
+          if (activeItem.parentId === nextItem.parentId) {
+            nextId = nextItem.id;
+          } else {
+            nextId = null;
+          }
+        }
+
+        onPositionChange({
+          targetId: active.id as string,
+          parentId: projected.parentId,
+          nextId,
+          containerId: flattendContainers[overContainerIndex].id,
+        });
 
         newItems[overContainerIndex] = {
           ...items[overContainerIndex],

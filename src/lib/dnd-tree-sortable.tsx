@@ -19,6 +19,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import {
   buildTree,
   findContainerIndexWithId,
+  flattenContainer,
   flattenTree,
   getProjection,
   removeChildrenOf,
@@ -126,7 +127,9 @@ const DndTreeSortable = ({
 
     const activeContainer = items[activeContainerIndex];
     const overContainer = items[overContainerIndex];
-    const activeItem = activeContainer.children.find(
+    const flattendActiveTree = flattenTree(activeContainer.children);
+    const flattendOverTree = flattenTree(overContainer.children);
+    const activeItem = flattendActiveTree.find(
       (item) => item.id === (active.id as string)
     );
     if (activeItem === undefined) {
@@ -134,16 +137,17 @@ const DndTreeSortable = ({
     }
 
     const clonedContainers = [...items];
-
     clonedContainers[activeContainerIndex] = {
-      ...activeContainer,
-      children: activeContainer.children.filter(
-        (item) => item.id !== active.id
+      ...clonedContainers[activeContainerIndex],
+      children: buildTree(
+        removeChildrenOf(flattendActiveTree, [active.id as string]).filter(
+          (item) => item.id !== active.id
+        )
       ),
     };
     clonedContainers[overContainerIndex] = {
-      ...overContainer,
-      children: [...clonedContainers[overContainerIndex].children, activeItem],
+      ...clonedContainers[overContainerIndex],
+      children: buildTree([...flattendOverTree, ...flattenTree([activeItem])]),
     };
 
     setItems(clonedContainers);
@@ -168,14 +172,15 @@ const DndTreeSortable = ({
     if (!active || !over) {
       return;
     }
+    const flattendContainers = flattenContainer(items);
 
     const activeContainerIndex = findContainerIndexWithId(
       active.id as string,
-      items
+      flattendContainers
     );
     const overContainerIndex = findContainerIndexWithId(
       over.id as string,
-      items
+      flattendContainers
     );
     if (
       activeContainerIndex === null ||
@@ -192,22 +197,34 @@ const DndTreeSortable = ({
       (item) => item.id === over.id
     );
 
-    if (projected === null && activeItemIndex !== overItemIndex) {
+    if (projected === null) {
       return;
     }
 
     if (projected) {
       setItems((prev) => {
         const newItems = [...prev];
-        const clonedItems = [...items[overContainerIndex].children];
-        const activeItems = prev[overContainerIndex].children[activeItemIndex];
-        clonedItems[activeItemIndex] = {
-          ...activeItems,
+        const clonedItems = flattenTree([
+          ...items[overContainerIndex].children,
+        ]);
+        const activeIndex = clonedItems.findIndex(
+          (item) => item.id === active.id
+        );
+        const activeTreeItem = clonedItems[activeIndex];
+        clonedItems[activeIndex] = {
+          ...activeTreeItem,
           depth: projected.depth,
+          parentId: projected.parentId,
         };
+        const sortedClonedItems = arrayMove(
+          clonedItems,
+          activeItemIndex,
+          overItemIndex
+        );
+
         newItems[overContainerIndex] = {
           ...items[overContainerIndex],
-          children: arrayMove(clonedItems, activeItemIndex, overItemIndex),
+          children: buildTree(sortedClonedItems),
         };
 
         return newItems;

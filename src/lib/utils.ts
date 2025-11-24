@@ -1,22 +1,36 @@
-import { FlattendContainer, FlattenedItem, TreeItem } from "./type";
+import { Container, FlattendContainer, FlattenedItem, TreeItem } from "./type";
 import { arrayMove } from "@dnd-kit/sortable";
 
 export const findContainerIndexWithId = (
   id: string,
-  items: { id: string; children: { id: string; [key: string]: any }[] }[]
+  items: Container[]
 ): number | null => {
   const containerIndex = items.findIndex((item) => item.id === id);
   if (containerIndex !== -1) {
     return containerIndex;
   }
-  const index = items.findIndex((item) =>
-    item.children.some((child) => child.id === id)
-  );
-  if (index === -1) {
-    return null;
+
+  for (const [index, item] of items.entries()) {
+    const found = bfs(item.children, id);
+    if (found) {
+      return index;
+    }
   }
 
-  return index;
+  return null;
+};
+
+const bfs = (items: TreeItem[], id: string): TreeItem | null => {
+  const queue: TreeItem[] = [...items];
+  while (queue.length > 0) {
+    const item = queue.shift();
+    if (item?.id === id) {
+      return item;
+    }
+    queue.push(...(item?.children ?? []));
+  }
+
+  return null;
 };
 
 const getDragDepth = (offset: number, indentationWidth: number): number => {
@@ -188,10 +202,27 @@ export function flattenTree(items: TreeItem[]): FlattenedItem[] {
 }
 
 export function findItem(
-  items: TreeItem[],
+  items: FlattenedItem[],
   itemId: string
 ): TreeItem | undefined {
   return items.find(({ id }) => id === itemId);
+}
+
+export function flattenContainer(containers: Container[]): FlattendContainer[] {
+  return containers.map((container) => ({
+    ...container,
+    children: flattenTree(container.children),
+  }));
+}
+
+export function getRecursiveChildren(
+  items: TreeItem[],
+  ids: string[]
+): TreeItem[] {
+  return items.flatMap((item) => [
+    item,
+    ...getRecursiveChildren(item.children, ids),
+  ]);
 }
 
 export function buildTree(flattendItems: FlattenedItem[]): TreeItem[] {
@@ -202,7 +233,10 @@ export function buildTree(flattendItems: FlattenedItem[]): TreeItem[] {
   for (const item of items) {
     const { id, children } = item;
     const parentId = item.parentId ?? root.id;
-    const parent = nodes[parentId] ?? findItem(items, parentId);
+    let parent = nodes[parentId] ?? findItem(items, parentId);
+    if (parent === undefined) {
+      parent = root;
+    }
 
     nodes[id] = { id, children };
     parent.children.push(item);

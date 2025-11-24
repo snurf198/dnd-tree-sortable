@@ -193,13 +193,6 @@ const DndTreeSortable = ({
       return;
     }
 
-    const activeItemIndex = items[activeContainerIndex].children.findIndex(
-      (item) => item.id === active.id
-    );
-    const overItemIndex = items[overContainerIndex].children.findIndex(
-      (item) => item.id === over.id
-    );
-
     if (projected === null) {
       return;
     }
@@ -210,11 +203,14 @@ const DndTreeSortable = ({
         const clonedItems = flattenTree([
           ...items[overContainerIndex].children,
         ]);
-        const activeIndex = clonedItems.findIndex(
+        const activeItemIndex = clonedItems.findIndex(
           (item) => item.id === active.id
         );
-        const activeTreeItem = clonedItems[activeIndex];
-        clonedItems[activeIndex] = {
+        const overItemIndex = clonedItems.findIndex(
+          (item) => item.id === over.id
+        );
+        const activeTreeItem = clonedItems[activeItemIndex];
+        clonedItems[activeItemIndex] = {
           ...activeTreeItem,
           depth: projected.depth,
           parentId: projected.parentId,

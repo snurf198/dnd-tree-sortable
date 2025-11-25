@@ -27,9 +27,15 @@ export interface PositionChangeEvent {
   parentId: string | null;
   nextId: string | null;
   containerId: string;
+  items: Container[];
+  previousItems: Container[];
+  setItems: (items: Container[]) => void;
 }
 
 export interface ContainerPositionChangeEvent {
   containerId: string;
   nextContainerId: string | null;
+  items: Container[];
+  previousItems: Container[];
+  setItems: (items: Container[]) => void;
 }

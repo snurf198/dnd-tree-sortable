@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   closestCorners,
   DndContext,
@@ -70,6 +70,11 @@ const DndTreeSortable = ({
   linkIcon?: React.ReactNode | null;
 }) => {
   const [items, setItems] = useState<Container[]>(initialItems);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
   const touchSensor = useSensor(TouchSensor);
   const mouseSensor = useSensor(MouseSensor);
   const sensors = useSensors(touchSensor, mouseSensor);
@@ -243,6 +248,9 @@ const DndTreeSortable = ({
           onContainerPositionChange({
             containerId: active.id as string,
             nextContainerId,
+            items: newItems,
+            previousItems: prev,
+            setItems: (items) => setItems(items),
           });
         }
 
@@ -315,18 +323,20 @@ const DndTreeSortable = ({
           }
         }
 
-        onPositionChange({
-          targetId: active.id as string,
-          parentId: projected.parentId,
-          nextId,
-          containerId: flattendContainers[overContainerIndex].id,
-        });
-
         newItems[overContainerIndex] = {
           ...items[overContainerIndex],
           children: buildTree(sortedClonedItems),
         };
 
+        onPositionChange({
+          targetId: active.id as string,
+          parentId: projected.parentId,
+          nextId,
+          containerId: flattendContainers[overContainerIndex].id,
+          items: newItems,
+          previousItems: prev,
+          setItems: (items) => setItems(items),
+        });
         return newItems;
       });
     }

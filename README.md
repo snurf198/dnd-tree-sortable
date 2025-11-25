@@ -1,6 +1,6 @@
 # @snurf198/dnd-tree-sortable
 
-A React component library for drag-and-drop tree sorting with nested hierarchies.
+A React component library for drag-and-drop tree sorting with nested hierarchies and sortable containers.
 
 ## Installation
 
@@ -8,15 +8,15 @@ A React component library for drag-and-drop tree sorting with nested hierarchies
 npm install @snurf198/dnd-tree-sortable
 ```
 
-or
-
 ```bash
 yarn add @snurf198/dnd-tree-sortable
 ```
 
-## Peer Dependencies
+```bash
+pnpm add @snurf198/dnd-tree-sortable
+```
 
-This library requires the following peer dependencies:
+## Peer Dependencies
 
 - `react` >= 18.0.0
 - `react-dom` >= 18.0.0
@@ -28,19 +28,25 @@ This library requires the following peer dependencies:
 ### Basic Example
 
 ```tsx
-import { DndTreeSortable, Container, PositionChangeEvent, FlattenedItem, FlattendContainer } from '@snurf198/dnd-tree-sortable';
+import {
+  DndTreeSortable,
+  Container,
+  PositionChangeEvent,
+  FlattenedItem,
+  FlattendContainer,
+} from "@snurf198/dnd-tree-sortable";
 
 const items: Container[] = [
   {
-    id: "1",
+    id: "container-1",
     children: [
       {
-        id: "3",
+        id: "task-1",
         name: "Task 1",
         children: [
           {
-            id: "4",
-            name: "Task 2",
+            id: "task-2",
+            name: "Task 2 (nested)",
             children: [],
           },
         ],
@@ -51,25 +57,37 @@ const items: Container[] = [
 
 function App() {
   const handlePositionChange = (event: PositionChangeEvent) => {
-    console.log('Position changed:', event);
-    // Handle the position change in your application
+    console.log("Item moved:", event);
   };
 
   const renderItem = ({ item }: { item: FlattenedItem }) => (
-    <div style={{ padding: '8px', background: '#f0f0f0', margin: '4px 0' }}>
-      {item.name}
-    </div>
+    <div style={{ padding: "8px", background: "#f0f0f0" }}>{item.name}</div>
   );
 
   const renderContainer = ({
     container,
-    children
+    children,
+    handleProps,
+    isDragging,
   }: {
     container: FlattendContainer;
-    children: React.ReactNode
+    children: React.ReactNode;
+    handleProps?: {
+      attributes: Record<string, any>;
+      listeners: Record<string, any> | undefined;
+    };
+    isDragging?: boolean;
   }) => (
-    <div style={{ border: '1px solid #ccc', padding: '16px', borderRadius: '4px' }}>
-      <h3>Container {container.id}</h3>
+    <div
+      style={{ border: "1px solid #ccc", padding: "16px", borderRadius: "4px" }}
+    >
+      <div
+        {...handleProps?.attributes}
+        {...handleProps?.listeners}
+        style={{ cursor: "grab" }}
+      >
+        Container {container.id}
+      </div>
       {children}
     </div>
   );
@@ -80,7 +98,6 @@ function App() {
       renderItem={renderItem}
       renderContainer={renderContainer}
       onPositionChange={handlePositionChange}
-      indentationWidth={20}
     />
   );
 }
@@ -88,19 +105,18 @@ function App() {
 
 ### Using Default Components
 
-The library provides default rendering components that you can use:
-
 ```tsx
 import {
   DndTreeSortable,
   DefaultContainer,
   DefaultItemRender,
   Container,
-  PositionChangeEvent
-} from '@snurf198/dnd-tree-sortable';
+} from "@snurf198/dnd-tree-sortable";
 
 function App() {
-  const items: Container[] = [/* your items */];
+  const items: Container[] = [
+    /* your items */
+  ];
 
   return (
     <DndTreeSortable
@@ -113,69 +129,141 @@ function App() {
 }
 ```
 
+### Sortable Containers
+
+Containers can be reordered by dragging their handle. Use `onContainerPositionChange` to track container movements:
+
+```tsx
+<DndTreeSortable
+  items={items}
+  renderItem={renderItem}
+  renderContainer={renderContainer}
+  onPositionChange={handlePositionChange}
+  onContainerPositionChange={(event) => {
+    console.log("Container moved:", event.containerId);
+    console.log("Now before:", event.nextContainerId);
+  }}
+/>
+```
+
+### Custom Link Icon
+
+Display a visual connection between parent and child items:
+
+```tsx
+<DndTreeSortable
+  items={items}
+  renderItem={renderItem}
+  renderContainer={renderContainer}
+  onPositionChange={handlePositionChange}
+  linkIcon={<span>└</span>}
+/>
+```
+
 ## API
 
 ### DndTreeSortable Props
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `items` | `Container[]` | Yes | - | Array of container objects with nested tree items |
-| `renderItem` | `({ item }: { item: FlattenedItem }) => React.ReactNode` | Yes | - | Function to render individual tree items |
-| `renderContainer` | `({ container, children }: { container: FlattendContainer; children: React.ReactNode }) => React.ReactNode` | Yes | - | Function to render containers |
-| `onPositionChange` | `(event: PositionChangeEvent) => void` | Yes | - | Callback fired when an item's position changes |
-| `indentationWidth` | `number` | No | 20 | Width of indentation for nested items in pixels |
+| Prop                        | Type                                            | Required | Default | Description                                |
+| --------------------------- | ----------------------------------------------- | -------- | ------- | ------------------------------------------ |
+| `items`                     | `Container[]`                                   | Yes      | -       | Array of containers with nested tree items |
+| `renderItem`                | `(props: { item: FlattenedItem }) => ReactNode` | Yes      | -       | Render function for tree items             |
+| `renderContainer`           | `(props: RenderContainerProps) => ReactNode`    | Yes      | -       | Render function for containers             |
+| `onPositionChange`          | `(event: PositionChangeEvent) => void`          | Yes      | -       | Callback when an item moves                |
+| `onContainerPositionChange` | `(event: ContainerPositionChangeEvent) => void` | No       | -       | Callback when a container moves            |
+| `indentationWidth`          | `number`                                        | No       | `20`    | Indentation width per depth level (px)     |
+| `containerGap`              | `number`                                        | No       | `10`    | Gap between containers (px)                |
+| `itemGap`                   | `number`                                        | No       | `10`    | Gap between items (px)                     |
+| `linkIcon`                  | `ReactNode \| null`                             | No       | `null`  | Icon shown for nested items                |
 
-### Types
+### RenderContainerProps
 
-#### Container
+```typescript
+{
+  container: FlattendContainer;
+  children: React.ReactNode;
+  handleProps?: {
+    attributes: Record<string, any>;
+    listeners: Record<string, any> | undefined;
+  };
+  isDragging?: boolean;
+}
+```
+
+Spread `handleProps.attributes` and `handleProps.listeners` onto an element to make it the drag handle for the container.
+
+## Types
+
+### Container
 
 ```typescript
 interface Container {
   id: string;
   children: TreeItem[];
-  [key: string]: any;
+  [key: string]: any; // Additional custom properties
 }
 ```
 
-#### TreeItem
+### TreeItem
 
 ```typescript
 interface TreeItem {
   id: string;
   children: TreeItem[];
-  [key: string]: any;
+  [key: string]: any; // Additional custom properties
 }
 ```
 
-#### FlattenedItem
+### FlattenedItem
 
 ```typescript
 interface FlattenedItem extends TreeItem {
-  parentId: null | string;
+  parentId: string | null;
   depth: number;
   index: number;
 }
 ```
 
-#### PositionChangeEvent
+### FlattendContainer
+
+```typescript
+interface FlattendContainer {
+  id: string;
+  children: FlattenedItem[];
+  [key: string]: any;
+}
+```
+
+### PositionChangeEvent
 
 ```typescript
 interface PositionChangeEvent {
-  targetId: string;      // ID of the moved item
-  parentId: string | null; // ID of the new parent (null for root level)
-  nextId: string | null;   // ID of the next sibling (null if moved to end)
-  containerId: string;     // ID of the container
+  targetId: string; // ID of the moved item
+  parentId: string | null; // New parent ID (null = root level)
+  nextId: string | null; // Next sibling ID (null = last position)
+  containerId: string; // Container ID
+}
+```
+
+### ContainerPositionChangeEvent
+
+```typescript
+interface ContainerPositionChangeEvent {
+  containerId: string; // ID of the moved container
+  nextContainerId: string | null; // Next container ID (null = last position)
 }
 ```
 
 ## Features
 
-- Drag and drop functionality for tree structures
-- Support for nested hierarchies
-- Customizable rendering for items and containers
-- Position change callbacks for state management
-- Configurable indentation width
-- Built with @dnd-kit for smooth drag-and-drop interactions
+- Drag and drop for tree structures with nested hierarchies
+- Sortable containers with drag handles
+- Move items between containers
+- Visual indentation with customizable width
+- Optional link icons for parent-child relationships
+- Customizable gaps between items and containers
+- Built on [@dnd-kit](https://dndkit.com/) for smooth interactions
+- Touch and mouse support
 
 ## License
 

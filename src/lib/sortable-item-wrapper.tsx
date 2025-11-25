@@ -100,13 +100,13 @@ const SortableItemWrapper = ({
               }}
             ></div>
           ))}
-        <div>
+        <div style={{ width: "100%" }}>
           {isDragging && (
             <div
               style={{
                 position: "relative",
                 height: "4px",
-                backgroundColor: "#000000",
+                backgroundColor: "#2563eb",
                 top: -(itemGap / 2),
               }}
             ></div>

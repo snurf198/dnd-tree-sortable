@@ -66,6 +66,25 @@ const DroppableContainer = ({
     listeners,
   };
 
+  // When dragging this container, show a drop indicator placeholder
+  if (isDragging) {
+    return (
+      <div
+        ref={(node) => {
+          setNodeRef(node);
+          droppable.setNodeRef(node);
+        }}
+        style={{
+          ...style,
+          height: "40px",
+          border: "2px dashed #2563eb",
+          borderRadius: "5px",
+          backgroundColor: "#eff6ff",
+        }}
+      />
+    );
+  }
+
   return (
     <div
       ref={(node) => {

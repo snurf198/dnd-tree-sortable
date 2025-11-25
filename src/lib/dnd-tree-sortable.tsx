@@ -53,6 +53,7 @@ const DndTreeSortable = ({
     container,
     children,
     handleProps,
+    isDragging,
   }: {
     container: FlattendContainer;
     children: React.ReactNode;
@@ -60,6 +61,7 @@ const DndTreeSortable = ({
       attributes: Record<string, any>;
       listeners: Record<string, any> | undefined;
     };
+    isDragging?: boolean;
   }) => React.ReactNode;
   onPositionChange: (event: PositionChangeEvent) => void;
   onContainerPositionChange?: (event: ContainerPositionChangeEvent) => void;
@@ -370,7 +372,6 @@ const DndTreeSortable = ({
               key={item.id}
               container={item}
               renderItem={renderItem}
-              overId={overId}
               activeId={activeId}
               renderContainer={renderContainer}
               indentationWidth={indentationWidth}
@@ -392,35 +393,13 @@ const DndTreeSortable = ({
             {renderItem({ item: activeItem })}
           </SortableItemWrapper>
         ) : null}
-        {activeId && activeContainer && activeType === "container" ? (
-          <div style={{ opacity: 0.8 }}>
-            {renderContainer({
+        {activeId && activeContainer && activeType === "container"
+          ? renderContainer({
               container: activeContainer,
-              children: (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: itemGap,
-                    height: "100%",
-                  }}
-                >
-                  {activeContainer.children.map((item) => (
-                    <SortableItemWrapper
-                      key={item.id}
-                      id={item.id}
-                      depth={item.depth}
-                      indentationWidth={indentationWidth}
-                      disabled
-                    >
-                      {renderItem({ item })}
-                    </SortableItemWrapper>
-                  ))}
-                </div>
-              ),
-            })}
-          </div>
-        ) : null}
+              children: null,
+              isDragging: true,
+            })
+          : null}
       </DragOverlay>
     </DndContext>
   );

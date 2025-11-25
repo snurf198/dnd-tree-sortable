@@ -21,13 +21,13 @@ const DroppableContainer = ({
   isContainerDragging = false,
 }: {
   container: FlattendContainer;
-  overId: string | null;
   activeId: string | null;
   renderItem: ({ item }: { item: FlattenedItem }) => React.ReactNode;
   renderContainer: ({
     container,
     children,
     handleProps,
+    isDragging,
   }: {
     container: FlattendContainer;
     children: React.ReactNode;
@@ -35,6 +35,7 @@ const DroppableContainer = ({
       attributes: Record<string, any>;
       listeners: Record<string, any> | undefined;
     };
+    isDragging?: boolean;
   }) => React.ReactNode;
   projected: { depth: number } | null;
   indentationWidth?: number;
@@ -58,7 +59,6 @@ const DroppableContainer = ({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   const handleProps = {
@@ -82,6 +82,7 @@ const DroppableContainer = ({
         {renderContainer({
           container,
           handleProps,
+          isDragging,
           children: (
             <div
               style={{

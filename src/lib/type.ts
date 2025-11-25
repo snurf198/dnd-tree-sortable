@@ -28,3 +28,8 @@ export interface PositionChangeEvent {
   nextId: string | null;
   containerId: string;
 }
+
+export interface ContainerPositionChangeEvent {
+  containerId: string;
+  nextContainerId: string | null;
+}

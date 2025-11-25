@@ -8,4 +8,5 @@ export type {
   TreeItem,
   FlattenedItem,
   PositionChangeEvent,
+  ContainerPositionChangeEvent,
 } from "./type";

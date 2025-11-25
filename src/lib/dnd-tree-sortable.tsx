@@ -15,12 +15,17 @@ import {
 import DroppableContainer from "./droppable-container";
 import {
   Container,
+  ContainerPositionChangeEvent,
   FlattendContainer,
   FlattenedItem,
   PositionChangeEvent,
 } from "./type";
 import SortableItemWrapper from "./sortable-item-wrapper";
-import { arrayMove } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   buildTree,
   findContainerIndexWithId,
@@ -36,6 +41,7 @@ const DndTreeSortable = ({
   renderItem,
   indentationWidth = 20,
   onPositionChange,
+  onContainerPositionChange,
   containerGap = 10,
   itemGap = 10,
   linkIcon = null,
@@ -46,11 +52,17 @@ const DndTreeSortable = ({
   renderContainer: ({
     container,
     children,
+    handleProps,
   }: {
     container: FlattendContainer;
     children: React.ReactNode;
+    handleProps?: {
+      attributes: Record<string, any>;
+      listeners: Record<string, any> | undefined;
+    };
   }) => React.ReactNode;
   onPositionChange: (event: PositionChangeEvent) => void;
+  onContainerPositionChange?: (event: ContainerPositionChangeEvent) => void;
   containerGap?: number;
   itemGap?: number;
   linkIcon?: React.ReactNode | null;
@@ -62,6 +74,9 @@ const DndTreeSortable = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [offsetLeft, setOffsetLeft] = useState<number>(0);
+  const [activeType, setActiveType] = useState<"item" | "container" | null>(
+    null
+  );
 
   const flattenedContainers: FlattendContainer[] = useMemo(() => {
     return items.map((container) => ({
@@ -85,8 +100,14 @@ const DndTreeSortable = ({
       : null;
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-    setOverId(event.active.id as string);
+    const activeIdValue = event.active.id as string;
+    setActiveId(activeIdValue);
+    setOverId(activeIdValue);
+
+    const isContainer = items.some(
+      (container) => container.id === activeIdValue
+    );
+    setActiveType(isContainer ? "container" : "item");
   };
 
   const handleDragOver = (
@@ -99,6 +120,15 @@ const DndTreeSortable = ({
     if (!over) {
       return;
     }
+
+    // If dragging a container, skip item-level drag over handling
+    const isActiveContainer = items.some(
+      (container) => container.id === active.id
+    );
+    if (isActiveContainer) {
+      return;
+    }
+
     const activeContainerIndex = findContainerIndexWithId(
       active.id as string,
       items
@@ -166,14 +196,60 @@ const DndTreeSortable = ({
       items: Container[] | ((prev: Container[]) => Container[])
     ) => void
   ) => {
+    const currentActiveType = activeType;
     setActiveId(null);
     setOverId(null);
     setOffsetLeft(0);
+    setActiveType(null);
 
     const { active, over } = event;
     if (!active || !over) {
       return;
     }
+
+    // Handle container sorting
+    if (currentActiveType === "container") {
+      const activeContainerIndex = items.findIndex(
+        (container) => container.id === active.id
+      );
+      const overContainerIndex = items.findIndex(
+        (container) => container.id === over.id
+      );
+
+      if (
+        activeContainerIndex === -1 ||
+        overContainerIndex === -1 ||
+        activeContainerIndex === overContainerIndex
+      ) {
+        return;
+      }
+
+      setItems((prev) => {
+        const newItems = arrayMove(
+          prev,
+          activeContainerIndex,
+          overContainerIndex
+        );
+
+        if (onContainerPositionChange) {
+          const newIndex = newItems.findIndex(
+            (container) => container.id === active.id
+          );
+          const nextContainerId =
+            newIndex + 1 < newItems.length ? newItems[newIndex + 1].id : null;
+
+          onContainerPositionChange({
+            containerId: active.id as string,
+            nextContainerId,
+          });
+        }
+
+        return newItems;
+      });
+      return;
+    }
+
+    // Handle item sorting
     const flattendContainers = flattenContainer(items);
 
     const activeContainerIndex = findContainerIndexWithId(
@@ -258,6 +334,12 @@ const DndTreeSortable = ({
     .flatMap((item) => item.children)
     .find((item) => item.id === activeId);
 
+  const activeContainer = flattenedContainers.find(
+    (container) => container.id === activeId
+  );
+
+  const isContainerDragging = activeType === "container";
+
   return (
     <DndContext
       sensors={sensors}
@@ -271,33 +353,73 @@ const DndTreeSortable = ({
       onDragMove={handleDragMove}
       collisionDetection={closestCorners}
     >
-      <div
-        style={{ display: "flex", flexDirection: "column", gap: containerGap }}
+      <SortableContext
+        items={flattenedContainers.map((container) => container.id)}
+        strategy={verticalListSortingStrategy}
       >
-        {flattenedContainers.map((item) => (
-          <DroppableContainer
-            projected={projected}
-            key={item.id}
-            container={item}
-            renderItem={renderItem}
-            overId={overId}
-            activeId={activeId}
-            renderContainer={renderContainer}
-            indentationWidth={indentationWidth}
-            itemGap={itemGap}
-            linkIcon={linkIcon}
-          />
-        ))}
-      </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: containerGap,
+          }}
+        >
+          {flattenedContainers.map((item) => (
+            <DroppableContainer
+              projected={projected}
+              key={item.id}
+              container={item}
+              renderItem={renderItem}
+              overId={overId}
+              activeId={activeId}
+              renderContainer={renderContainer}
+              indentationWidth={indentationWidth}
+              itemGap={itemGap}
+              linkIcon={linkIcon}
+              isContainerDragging={isContainerDragging}
+            />
+          ))}
+        </div>
+      </SortableContext>
       <DragOverlay>
-        {activeId && activeItem ? (
+        {activeId && activeItem && activeType === "item" ? (
           <SortableItemWrapper
+            key={`drag-overlay-${activeId}`}
             id={activeId}
-            ghost={true}
             depth={activeItem.depth}
+            ghost={true}
           >
             {renderItem({ item: activeItem })}
           </SortableItemWrapper>
+        ) : null}
+        {activeId && activeContainer && activeType === "container" ? (
+          <div style={{ opacity: 0.8 }}>
+            {renderContainer({
+              container: activeContainer,
+              children: (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: itemGap,
+                    height: "100%",
+                  }}
+                >
+                  {activeContainer.children.map((item) => (
+                    <SortableItemWrapper
+                      key={item.id}
+                      id={item.id}
+                      depth={item.depth}
+                      indentationWidth={indentationWidth}
+                      disabled
+                    >
+                      {renderItem({ item })}
+                    </SortableItemWrapper>
+                  ))}
+                </div>
+              ),
+            })}
+          </div>
         ) : null}
       </DragOverlay>
     </DndContext>

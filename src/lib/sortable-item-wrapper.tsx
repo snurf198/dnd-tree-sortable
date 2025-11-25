@@ -9,6 +9,8 @@ const SortableItemWrapper = ({
   ghost = false,
   indentationWidth = 20,
   linkIcon = null,
+  disabled = false,
+  itemGap = 10,
 }: {
   id: string;
   children?: React.ReactNode;
@@ -16,6 +18,8 @@ const SortableItemWrapper = ({
   depth: number;
   indentationWidth?: number;
   linkIcon?: React.ReactNode | null;
+  disabled?: boolean;
+  itemGap?: number;
 }) => {
   const {
     setNodeRef,
@@ -24,45 +28,40 @@ const SortableItemWrapper = ({
     transition,
     transform,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled });
 
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
     marginLeft: `${
-      Math.max(depth - (linkIcon != null && !isDragging ? 1 : 0), 0) *
-      indentationWidth
+      Math.max(depth - (linkIcon != null ? 1 : 0), 0) * indentationWidth
     }px`,
-    display: "flex",
-    flexDirection: "row" as const,
-    alignItems: "center",
   };
 
   const isDraggingStyle = isDragging
-    ? {
-        height: "4px",
-        backgroundColor: "#000000",
-      }
-    : {};
-
-  const ghostStyle = ghost
     ? {
         opacity: 0.5,
       }
     : {};
 
-  if (isDragging) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={{
-          ...style,
-          ...isDraggingStyle,
-          ...ghostStyle,
-        }}
-      ></div>
-    );
-  }
+  const ghostStyle = ghost
+    ? {
+        opacity: 1,
+      }
+    : {};
+
+  // if (isDragging) {
+  //   return (
+  //     <div
+  //       ref={setNodeRef}
+  //       style={{
+  //         ...style,
+  //         ...isDraggingStyle,
+  //         ...ghostStyle,
+  //       }}
+  //     ></div>
+  //   );
+  // }
 
   const additionalStyle = {
     cursor: "grab",
@@ -74,12 +73,47 @@ const SortableItemWrapper = ({
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, ...ghostStyle, ...additionalStyle }}
+      style={{
+        ...style,
+        ...isDraggingStyle,
+        ...ghostStyle,
+        ...additionalStyle,
+      }}
       {...attributes}
       {...listeners}
     >
-      {depth > 0 && <div>{linkIcon}</div>}
-      <div>{children}</div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row" as const,
+          alignItems: "center",
+        }}
+      >
+        {depth > 0 &&
+          (linkIcon ? (
+            linkIcon
+          ) : (
+            <div
+              style={{
+                width: indentationWidth,
+                height: indentationWidth,
+              }}
+            ></div>
+          ))}
+        <div>
+          {isDragging && (
+            <div
+              style={{
+                position: "relative",
+                height: "4px",
+                backgroundColor: "#000000",
+                top: -(itemGap / 2),
+              }}
+            ></div>
+          )}
+          {children}
+        </div>
+      </div>
     </div>
   );
 };

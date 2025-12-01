@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  closestCorners,
   DndContext,
   DragEndEvent,
   DragMoveEvent,
@@ -34,6 +33,7 @@ import {
   getProjection,
   removeChildrenOf,
 } from "./utils";
+import { createCustomCollisionDetection } from "./collision-detection";
 
 const DndTreeSortable = ({
   items: initialItems,
@@ -122,18 +122,28 @@ const DndTreeSortable = ({
     items: Container[],
     setItems: (items: Container[]) => void
   ) => {
-    setOverId(event.over?.id as string);
     const { active, over } = event;
     if (!over) {
       return;
     }
 
-    // If dragging a container, skip item-level drag over handling
+    // If dragging a container, find the container id from over.id
     const isActiveContainer = items.some(
       (container) => container.id === active.id
     );
+
     if (isActiveContainer) {
-      return;
+      // When dragging a container, ensure overId is a container id
+      const overContainerIndex = findContainerIndexWithId(
+        over.id as string,
+        items
+      );
+      if (overContainerIndex !== null) {
+        setOverId(items[overContainerIndex].id);
+      }
+    } else {
+      // When dragging an item, use the over.id as is
+      setOverId(event.over?.id as string);
     }
 
     const activeContainerIndex = findContainerIndexWithId(
@@ -352,6 +362,11 @@ const DndTreeSortable = ({
 
   const isContainerDragging = activeType === "container";
 
+  const customCollisionDetection = createCustomCollisionDetection(
+    items,
+    activeType
+  );
+
   return (
     <DndContext
       sensors={sensors}
@@ -363,7 +378,7 @@ const DndTreeSortable = ({
         handleDragEnd(event, items, setItems);
       }}
       onDragMove={handleDragMove}
-      collisionDetection={closestCorners}
+      collisionDetection={customCollisionDetection}
     >
       <SortableContext
         items={flattenedContainers.map((container) => container.id)}

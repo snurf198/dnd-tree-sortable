@@ -75,14 +75,22 @@ const DndTreeSortable = ({
     setItems(initialItems);
   }, [initialItems]);
 
-  const touchSensor = useSensor(TouchSensor);
-  const mouseSensor = useSensor(MouseSensor);
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  });
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  });
   const sensors = useSensors(touchSensor, mouseSensor);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [offsetLeft, setOffsetLeft] = useState<number>(0);
   const [activeType, setActiveType] = useState<"item" | "container" | null>(
-    null
+    null,
   );
 
   const flattenedContainers: FlattendContainer[] = useMemo(() => {
@@ -90,7 +98,7 @@ const DndTreeSortable = ({
       ...container,
       children: removeChildrenOf(
         flattenTree(container.children),
-        activeId ? [activeId] : []
+        activeId ? [activeId] : [],
       ),
     }));
   }, [activeId, items]);
@@ -102,7 +110,7 @@ const DndTreeSortable = ({
           activeId,
           overId,
           offsetLeft,
-          indentationWidth
+          indentationWidth,
         )
       : null;
 
@@ -112,7 +120,7 @@ const DndTreeSortable = ({
     setOverId(activeIdValue);
 
     const isContainer = items.some(
-      (container) => container.id === activeIdValue
+      (container) => container.id === activeIdValue,
     );
     setActiveType(isContainer ? "container" : "item");
   };
@@ -120,7 +128,7 @@ const DndTreeSortable = ({
   const handleDragOver = (
     event: DragOverEvent,
     items: Container[],
-    setItems: (items: Container[]) => void
+    setItems: (items: Container[]) => void,
   ) => {
     const { active, over } = event;
     if (!over) {
@@ -129,14 +137,14 @@ const DndTreeSortable = ({
 
     // If dragging a container, find the container id from over.id
     const isActiveContainer = items.some(
-      (container) => container.id === active.id
+      (container) => container.id === active.id,
     );
 
     if (isActiveContainer) {
       // When dragging a container, ensure overId is a container id
       const overContainerIndex = findContainerIndexWithId(
         over.id as string,
-        items
+        items,
       );
       if (overContainerIndex !== null) {
         setOverId(items[overContainerIndex].id);
@@ -148,11 +156,11 @@ const DndTreeSortable = ({
 
     const activeContainerIndex = findContainerIndexWithId(
       active.id as string,
-      items
+      items,
     );
     const overContainerIndex = findContainerIndexWithId(
       over.id as string,
-      items
+      items,
     );
     if (activeContainerIndex === null || overContainerIndex === null) {
       return;
@@ -166,7 +174,7 @@ const DndTreeSortable = ({
     const flattendActiveTree = flattenTree(activeContainer.children);
     const flattendOverTree = flattenTree(overContainer.children);
     const activeItem = flattendActiveTree.find(
-      (item) => item.id === (active.id as string)
+      (item) => item.id === (active.id as string),
     );
     if (activeItem === undefined) {
       return;
@@ -177,8 +185,8 @@ const DndTreeSortable = ({
       ...clonedContainers[activeContainerIndex],
       children: buildTree(
         removeChildrenOf(flattendActiveTree, [active.id as string]).filter(
-          (item) => item.id !== active.id
-        )
+          (item) => item.id !== active.id,
+        ),
       ),
     };
 
@@ -210,8 +218,8 @@ const DndTreeSortable = ({
     event: DragEndEvent,
     items: Container[],
     setItems: (
-      items: Container[] | ((prev: Container[]) => Container[])
-    ) => void
+      items: Container[] | ((prev: Container[]) => Container[]),
+    ) => void,
   ) => {
     const currentActiveType = activeType;
     setActiveId(null);
@@ -227,10 +235,10 @@ const DndTreeSortable = ({
     // Handle container sorting
     if (currentActiveType === "container") {
       const activeContainerIndex = items.findIndex(
-        (container) => container.id === active.id
+        (container) => container.id === active.id,
       );
       const overContainerIndex = items.findIndex(
-        (container) => container.id === over.id
+        (container) => container.id === over.id,
       );
 
       if (
@@ -245,12 +253,12 @@ const DndTreeSortable = ({
         const newItems = arrayMove(
           prev,
           activeContainerIndex,
-          overContainerIndex
+          overContainerIndex,
         );
 
         if (onContainerPositionChange) {
           const newIndex = newItems.findIndex(
-            (container) => container.id === active.id
+            (container) => container.id === active.id,
           );
           const nextContainerId =
             newIndex + 1 < newItems.length ? newItems[newIndex + 1].id : null;
@@ -274,11 +282,11 @@ const DndTreeSortable = ({
 
     const activeContainerIndex = findContainerIndexWithId(
       active.id as string,
-      flattendContainers
+      flattendContainers,
     );
     const overContainerIndex = findContainerIndexWithId(
       over.id as string,
-      flattendContainers
+      flattendContainers,
     );
     if (
       activeContainerIndex === null ||
@@ -299,10 +307,10 @@ const DndTreeSortable = ({
           ...items[overContainerIndex].children,
         ]);
         const activeItemIndex = clonedItems.findIndex(
-          (item) => item.id === active.id
+          (item) => item.id === active.id,
         );
         const overItemIndex = clonedItems.findIndex(
-          (item) => item.id === over.id
+          (item) => item.id === over.id,
         );
         const activeTreeItem = clonedItems[activeItemIndex];
         clonedItems[activeItemIndex] = {
@@ -313,11 +321,11 @@ const DndTreeSortable = ({
         const sortedClonedItems = arrayMove(
           clonedItems,
           activeItemIndex,
-          overItemIndex
+          overItemIndex,
         );
 
         const newActiveItemIndex = sortedClonedItems.findIndex(
-          (item) => item.id === active.id
+          (item) => item.id === active.id,
         );
         let nextItemIndex = newActiveItemIndex + 1;
         let nextId: string | null = null;
@@ -357,14 +365,14 @@ const DndTreeSortable = ({
     .find((item) => item.id === activeId);
 
   const activeContainer = flattenedContainers.find(
-    (container) => container.id === activeId
+    (container) => container.id === activeId,
   );
 
   const isContainerDragging = activeType === "container";
 
   const customCollisionDetection = createCustomCollisionDetection(
     items,
-    activeType
+    activeType,
   );
 
   return (

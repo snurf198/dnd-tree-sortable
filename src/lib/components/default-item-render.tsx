@@ -3,6 +3,7 @@ import { FlattenedItem } from "../type";
 export const DefaultItemRender = ({ item }: { item: FlattenedItem }) => {
   return (
     <div
+      onClick={(e) => console.log("item", item)}
       style={{
         padding: "10px",
         border: "1px solid #ccc",
